@@ -1,0 +1,9 @@
+'use client'
+
+import Link from 'next/link'
+import { useApp } from '../../../App'
+
+export default function WishlistPage() {
+  const { wishlist, toggleWishlist, addToCart } = useApp()
+  return <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-accent">Saved items</p><h1 className="mt-2 font-display text-3xl text-brand">Your wishlist</h1></div><Link href="/products" className="text-sm font-semibold text-accent">Continue shopping</Link></div>{wishlist.length===0?<div className="mt-8 rounded-xl border bg-white p-10 text-center text-slate-500">Your wishlist is empty.</div>:<div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">{wishlist.map(product=>{const stock=product.stock??0;return <article key={product.id} className="overflow-hidden rounded-xl border bg-white"><Link href={`/products/${product.slug||product.id}`}><img src={product.image} alt={product.name} className="h-48 w-full bg-slate-50 object-contain p-4"/><div className="p-4"><p className="text-xs text-slate-500">{product.category}</p><h2 className="mt-1 line-clamp-2 font-semibold text-brand">{product.name}</h2><p className="mt-2 font-semibold">₹{product.price.toLocaleString('en-IN')}</p></div></Link><div className="flex gap-2 px-4 pb-4"><button disabled={stock<1} onClick={()=>addToCart({id:product.id,name:product.name,price:product.price,image:product.image,category:product.category})} className="flex-1 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">{stock>0?'Add to cart':'Unavailable'}</button><button onClick={()=>toggleWishlist(product)} aria-label={`Remove ${product.name} from wishlist`} className="rounded-lg border px-3 text-xs text-slate-600">Remove</button></div></article>})}</div>}</div>
+}

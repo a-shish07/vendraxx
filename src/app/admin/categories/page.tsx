@@ -1,0 +1,3 @@
+'use client'
+import { useEffect,useState } from 'react'
+export default function AdminCategories(){const [categories,setCategories]=useState<string[]>([]);useEffect(()=>{fetch('/api/categories').then(r=>r.json()).then(d=>setCategories(d.categories||[]))},[]);return <div><h1 className="font-display text-3xl text-brand">Categories</h1><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{categories.map(c=><div key={c} className="rounded-xl border bg-white p-5"><p className="font-semibold">{c}</p><p className="mt-1 text-xs text-slate-500">Managed from product records</p></div>)}</div></div>}

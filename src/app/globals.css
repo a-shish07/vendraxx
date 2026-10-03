@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'DM Serif Display', serif;
+  --font-sans: 'Outfit', sans-serif;
+
+  --color-brand: #1e293b;
+  --color-brand-mid: #334155;
+  --color-brand-light: #475569;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-surface: #f8fafc;
+  --color-border: #e2e8f0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  color: #1e293b;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Product card hover */
+.product-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -8px rgba(30, 41, 59, 0.15);
+}
+
+/* Category card */
+.category-card {
+  transition: transform 0.3s ease;
+}
+.category-card:hover { transform: scale(1.02); }
+.category-card:hover .category-overlay { opacity: 0.6; }
+
+/* Button transitions */
+.btn-primary {
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+/* Input focus */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+/* Rating stars */
+.star-filled { color: #f59e0b; }
+.star-empty { color: #e2e8f0; }

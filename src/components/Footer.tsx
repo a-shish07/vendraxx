@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import Logo from './Logo'
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Logo from "./Logo";
 
 const quickLinks = [
-  { label: 'Home', path: '/' },
-  { label: 'Products', path: '/products' },
-  { label: 'About Us', path: '/about' },
-  { label: 'Contact', path: '/contact' },
-  { label: 'Cart', path: '/cart' },
-]
+  { label: "Home", path: "/" },
+  { label: "Products", path: "/products" },
+  { label: "About Us", path: "/about" },
+  { label: "Contact", path: "/contact" },
+  { label: "Cart", path: "/cart" },
+];
 
 const legalLinks = [
-  { label: 'Terms & Conditions', path: '/terms' },
-  { label: 'Refund Policy', path: '/refund-policy' },
-]
+  { label: "Terms & Conditions", path: "/terms" },
+  { label: "Refund Policy", path: "/refund-policy" },
+];
 
 export default function Footer() {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <footer className="bg-brand text-white">
@@ -26,13 +26,11 @@ export default function Footer() {
           MAIN FOOTER
       ========================================================== */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
         {/* -------------------------------------------------------
             TOP CTA / BRAND INTRO
         -------------------------------------------------------- */}
         <div className="border-b border-white/10 py-10 sm:py-12">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
-
             {/* Brand */}
             <div className="max-w-xl">
               <div className="mb-5">
@@ -50,22 +48,19 @@ export default function Footer() {
               <h2 className="mt-3 max-w-lg font-display text-2xl leading-tight text-white sm:text-3xl">
                 Quality products.
                 <br />
-                <span className="text-white/60">
-                  Simply delivered.
-                </span>
+                <span className="text-white/60">Simply delivered.</span>
               </h2>
 
               <p className="mt-3 max-w-md text-sm leading-6 text-white/55">
-                Discover carefully selected electronics and fashion
-                essentials, backed by dependable service and convenient
-                Cash on Delivery across India.
+                Discover carefully selected electronics and fashion essentials,
+                backed by dependable service and convenient Cash on Delivery
+                across India.
               </p>
             </div>
 
             {/* Support Card */}
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
               <div className="flex items-start gap-3">
-
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
                   <svg
                     className="h-5 w-5"
@@ -94,17 +89,16 @@ export default function Footer() {
                   </p>
 
                   <p className="mt-1 text-[11px] leading-5 text-white/45">
-                    Our support team is here to help with products,
-                    orders and delivery.
+                    Our support team is here to help with products, orders and
+                    delivery.
                   </p>
 
                   <button
                     type="button"
-                    onClick={() => router.push('/contact')}
+                    onClick={() => router.push("/contact")}
                     className="group mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent transition-colors hover:text-white"
                   >
                     Contact support
-
                     <svg
                       className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5"
                       viewBox="0 0 24 24"
@@ -129,7 +123,6 @@ export default function Footer() {
             FOOTER CONTENT
         -------------------------------------------------------- */}
         <div className="grid grid-cols-1 gap-10 py-10 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_0.8fr_1fr] lg:gap-12 lg:py-12">
-
           {/* =====================================================
               BRAND / SOCIAL
           ====================================================== */}
@@ -139,13 +132,12 @@ export default function Footer() {
             </p>
 
             <p className="mt-3 max-w-xs text-xs leading-6 text-white/50">
-              A modern shopping experience built around quality,
-              simplicity and dependable delivery.
+              A modern shopping experience built around quality, simplicity and
+              dependable delivery.
             </p>
 
             {/* Social */}
             <div className="mt-5 flex items-center gap-2.5">
-
               {/* Facebook */}
               <a
                 href="#"
@@ -194,23 +186,11 @@ export default function Footer() {
                   strokeWidth={2}
                   viewBox="0 0 24 24"
                 >
-                  <rect
-                    x="2"
-                    y="2"
-                    width="20"
-                    height="20"
-                    rx="5"
-                    ry="5"
-                  />
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
 
                   <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
 
-                  <line
-                    x1="17.5"
-                    y1="6.5"
-                    x2="17.51"
-                    y2="6.5"
-                  />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                 </svg>
               </a>
 
@@ -386,7 +366,6 @@ export default function Footer() {
             </h3>
 
             <div className="mt-5 space-y-2.5">
-
               {/* Email */}
               <a
                 href="mailto:vendraxpvt@gmail.com"
@@ -495,11 +474,7 @@ export default function Footer() {
                       d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1116 0z"
                     />
 
-                    <circle
-                      cx="12"
-                      cy="10"
-                      r="2.5"
-                    />
+                    <circle cx="12" cy="10" r="2.5" />
                   </svg>
                 </span>
 
@@ -552,5 +527,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }

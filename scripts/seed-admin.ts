@@ -23,12 +23,17 @@ async function main() {
   }
 
   await mongoose.connect(MONGODB_URI);
+  console.log("SEED URI DB:", mongoose.connection.name);
+console.log("SEED HOST:", mongoose.connection.host);
 
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
   const existingUser = await User.findOne({
     email: ADMIN_EMAIL.toLowerCase(),
   });
+
+  console.log("SEED DB:", mongoose.connection.name);
+console.log("SEED COLLECTION:", User.collection.name);
 
   if (existingUser) {
     existingUser.name = ADMIN_NAME;
@@ -37,7 +42,24 @@ async function main() {
 
     await existingUser.save();
 
-    console.log(`Admin account updated: ${ADMIN_EMAIL}`);
+    const verifyUser = await User.findOne({
+  email: ADMIN_EMAIL.toLowerCase(),
+})
+  .select("+passwordHash email role");
+
+console.log("VERIFY AFTER SAVE:", {
+  email: verifyUser?.email,
+  role: verifyUser?.role,
+  hasPasswordHash: typeof verifyUser?.passwordHash === "string",
+  passwordHashLength: verifyUser?.passwordHash?.length,
+});
+
+console.log("SEEDED USER:", {
+  email: existingUser.email,
+  role: existingUser.role,
+  hasPasswordHash: typeof existingUser.passwordHash === "string",
+  passwordHashLength: existingUser.passwordHash?.length,
+});
   } else {
     await User.create({
       name: ADMIN_NAME,

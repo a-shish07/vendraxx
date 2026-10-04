@@ -1,9 +1,10 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCart, type CartItem } from './hooks/useCart'
 import type { Product } from './data/products'
+import ToastViewport from './components/ToastViewPoint'
 
 export type Page = 'home' | 'products' | 'cart' | 'checkout' | 'about' | 'contact'
 export const pagePaths: Record<Page, string> = {
@@ -15,7 +16,12 @@ export interface User {
   name: string
   email: string
   role: 'CUSTOMER' | 'ADMIN'
+  phone?: string
+  avatar?: string
+  createdAt?: string
 }
+
+export type Toast = { id: number; type: 'success' | 'error' | 'info'; message: string }
 
 interface AppContextType {
   currentPage: Page
@@ -32,6 +38,9 @@ interface AppContextType {
   user: User | null
   authLoading: boolean
   refreshUser: () => Promise<void>
+  toasts: Toast[]
+  toast: (message: string, type?: Toast['type']) => void
+  dismissToast: (id: number) => void
 }
 
 export const AppContext = createContext<AppContextType>(null!)
@@ -55,6 +64,16 @@ export default function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [serverCartReady, setServerCartReady] = useState(false)
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const toastId = useRef(0)
+
+  const toast = useCallback((message: string, type: Toast['type'] = 'success') => {
+    const id = ++toastId.current
+    setToasts(current => [...current.slice(-3), { id, type, message }])
+    window.setTimeout(() => setToasts(current => current.filter(item => item.id !== id)), 4200)
+  }, [])
+
+  const dismissToast = useCallback((id: number) => setToasts(current => current.filter(item => item.id !== id)), [])
 
   const refreshUser = useCallback(async () => {
     try {
@@ -65,7 +84,8 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     finally { setAuthLoading(false) }
   }, [])
 
-  useEffect(() => { refreshUser() }, [refreshUser])
+  useEffect(() => { void refreshUser() }, [refreshUser])
+
   useEffect(() => {
     if (!user || !cartLoaded) { setServerCartReady(false); return }
     let cancelled = false
@@ -84,10 +104,12 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     void loadServerCart().catch(() => setServerCartReady(false))
     return () => { cancelled = true }
   }, [user, cartLoaded])
+
   useEffect(() => {
     if (!user || !serverCartReady) return
     void fetch('/api/cart', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: cart.map(({ id, quantity }) => ({ id, quantity })) }) })
   }, [user, serverCartReady, cart])
+
   useEffect(() => {
     if (!user) {
       try { const raw = localStorage.getItem('vendrax_wishlist'); if (raw) setWishlist(JSON.parse(raw) as Product[]) } catch { setWishlist([]) }
@@ -100,12 +122,13 @@ export default function AppProvider({ children }: { children: ReactNode }) {
         await Promise.all(local.map(product => fetch('/api/wishlist', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: product.id, action: 'add' }) })))
         const response = await fetch('/api/wishlist', { cache: 'no-store' })
         if (response.ok) { const data = await response.json(); if (!cancelled) setWishlist(data.products ?? []) }
-      } catch { /* Keep the current local wishlist available during a network outage. */ }
+      } catch { /* Keep local wishlist on network failure. */ }
     }
     void syncWishlist()
     return () => { cancelled = true }
   }, [user])
-  useEffect(() => { try { localStorage.setItem('vendrax_wishlist', JSON.stringify(wishlist)) } catch { /* Storage can be disabled by the browser. */ } }, [wishlist])
+
+  useEffect(() => { try { localStorage.setItem('vendrax_wishlist', JSON.stringify(wishlist)) } catch { /* Browser storage may be disabled. */ } }, [wishlist])
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior }) }, [pathname])
 
   const navigate = useCallback((page: Page | string, ...args: unknown[]) => {
@@ -116,17 +139,29 @@ export default function AppProvider({ children }: { children: ReactNode }) {
     router.push(pagePaths[page as Page] ?? String(page))
   }, [router])
 
+  const handleAddToCart = useCallback((product: Omit<CartItem, 'quantity'>) => {
+    addToCart(product)
+    toast(`${product.name} added to cart.`)
+  }, [addToCart, toast])
+
   const toggleWishlist = useCallback((product: Product) => {
     const removing = wishlist.some(item => item.id === product.id)
     setWishlist(current => removing ? current.filter(item => item.id !== product.id) : [...current, product])
     if (user) void fetch('/api/wishlist', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: product.id, action: removing ? 'remove' : 'add' }) })
-  }, [user, wishlist])
+    toast(removing ? 'Removed from wishlist.' : 'Added to wishlist.')
+  }, [user, wishlist, toast])
 
   const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart])
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart])
 
-  return <AppContext.Provider value={{
-    currentPage: pathToPage(pathname), navigate, cart, addToCart, removeFromCart, updateQuantity,
-    clearCart, cartTotal, cartCount, wishlist, toggleWishlist, user, authLoading, refreshUser,
-  }}>{children}</AppContext.Provider>
+  return (
+    <AppContext.Provider value={{
+      currentPage: pathToPage(pathname), navigate, cart, addToCart: handleAddToCart, removeFromCart, updateQuantity,
+      clearCart, cartTotal, cartCount, wishlist, toggleWishlist, user, authLoading, refreshUser,
+      toasts, toast, dismissToast,
+    }}>
+      {children}
+      <ToastViewport />
+    </AppContext.Provider>
+  )
 }

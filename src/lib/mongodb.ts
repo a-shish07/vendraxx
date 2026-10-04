@@ -12,7 +12,10 @@ type GlobalWithMongoose = typeof globalThis & {
 const globalForMongoose = globalThis as GlobalWithMongoose;
 
 export async function connectDB() {
-  if (!MONGODB_URI) throw new Error("MONGODB_URI is not configured");
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI is not configured");
+  }
+
   if (globalForMongoose.mongoose?.conn) {
     return globalForMongoose.mongoose.conn;
   }
@@ -25,14 +28,20 @@ export async function connectDB() {
   }
 
   if (!globalForMongoose.mongoose.promise) {
-    globalForMongoose.mongoose.promise = mongoose.connect(MONGODB_URI).catch((error) => {
-      if (globalForMongoose.mongoose) globalForMongoose.mongoose.promise = null;
-      throw error;
-    });
+    globalForMongoose.mongoose.promise = mongoose
+      .connect(MONGODB_URI)
+      .catch((error) => {
+        if (globalForMongoose.mongoose) {
+          globalForMongoose.mongoose.promise = null;
+        }
+        throw error;
+      });
   }
 
-  globalForMongoose.mongoose.conn =
-    await globalForMongoose.mongoose.promise;
+  globalForMongoose.mongoose.conn = await globalForMongoose.mongoose.promise;
+
+  console.log("NEXT DB:", mongoose.connection.name);
+  console.log("NEXT MONGODB HOST:", mongoose.connection.host);
 
   return globalForMongoose.mongoose.conn;
 }

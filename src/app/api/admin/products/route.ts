@@ -1,26 +1,146 @@
-import { NextResponse } from 'next/server'
-import { connectDB } from '@/lib/mongodb'
-import Product from '@/models/Product'
-import { requireAdmin } from '@/lib/auth'
-import { productInput } from '@/lib/product-input'
+import { NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import Product from "@/models/Product";
+import { requireAdmin } from "@/lib/auth";
+import { productInput } from "@/lib/product-input";
+import { assertSameOrigin, securityError } from "@/lib/security";
 
 export async function GET(req: Request) {
   try {
-    await requireAdmin(); await connectDB()
-    const params = new URL(req.url).searchParams; const page = Math.max(1, Number(params.get('page') || 1)); const limit = Math.min(100, Math.max(1, Number(params.get('limit') || 50)))
-    const [products, total] = await Promise.all([Product.find().sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(), Product.countDocuments()])
-    return NextResponse.json({ products: products.map(p => ({ ...p, id: String(p._id), _id: undefined })), page, pages: Math.ceil(total / limit), total })
-  } catch (e) { const forbidden = e instanceof Error && e.message === 'FORBIDDEN'; return NextResponse.json({ error: forbidden ? 'Forbidden' : 'Unauthorized' }, { status: forbidden ? 403 : 401 }) }
+    await requireAdmin();
+    await connectDB();
+    const params = new URL(req.url).searchParams;
+    const page = Math.max(1, Number(params.get("page") || 1) || 1);
+    const limit = Math.min(
+      50,
+      Math.max(10, Number(params.get("limit") || 50) || 50),
+    );
+    const search = (params.get("search") || "").trim().slice(0, 100);
+    const category = (params.get("category") || "").trim();
+    const stock = params.get("stock") || "";
+    const active = params.get("active") || "";
+    const filter: Record<string, any> = {};
+    if (category && category !== "all") filter.category = category;
+    if (active === "active") filter.active = true;
+    if (active === "inactive") filter.active = false;
+    if (stock === "out") filter.stock = 0;
+    if (stock === "low")
+      filter.$expr = {
+        $and: [
+          { $gt: ["$stock", 0] },
+          { $lte: ["$stock", "$lowStockThreshold"] },
+        ],
+      };
+    if (stock === "healthy")
+      filter.$expr = { $gt: ["$stock", "$lowStockThreshold"] };
+    if (search) {
+      const safe = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.$or = [
+        { name: { $regex: safe, $options: "i" } },
+        { sku: { $regex: safe, $options: "i" } },
+        { category: { $regex: safe, $options: "i" } },
+        { subcategory: { $regex: safe, $options: "i" } },
+        { tags: { $regex: safe, $options: "i" } },
+      ];
+    }
+    const sort =
+      params.get("sort") === "price-asc"
+        ? { price: 1 as const }
+        : params.get("sort") === "price-desc"
+          ? { price: -1 as const }
+          : params.get("sort") === "stock-asc"
+            ? { stock: 1 as const }
+            : { createdAt: -1 as const };
+    const [products, total, summary] = await Promise.all([
+      Product.find(filter)
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments(filter),
+      Promise.all([
+        Product.countDocuments(),
+        Product.countDocuments({ active: true }),
+        Product.countDocuments({ active: true, stock: 0 }),
+        Product.countDocuments({
+          active: true,
+          $expr: {
+            $and: [
+              { $gt: ["$stock", 0] },
+              { $lte: ["$stock", "$lowStockThreshold"] },
+            ],
+          },
+        }),
+        Product.aggregate([
+          { $match: { active: true } },
+          { $group: { _id: null, stock: { $sum: "$stock" } } },
+        ]),
+      ]),
+    ]);
+    return NextResponse.json({
+      products: products.map((p) => ({
+        ...p,
+        id: String(p._id),
+        images: p.images ?? [],
+        _id: undefined,
+      })),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      summary: {
+        total: summary[0],
+        active: summary[1],
+        outOfStock: summary[2],
+        lowStock: summary[3],
+        units: summary[4][0]?.stock || 0,
+      },
+    });
+  } catch (e) {
+    const forbidden = e instanceof Error && e.message === "FORBIDDEN";
+    const unauthorized = e instanceof Error && e.message === "UNAUTHORIZED";
+    return NextResponse.json(
+      { error: forbidden ? "Forbidden" : "Unauthorized" },
+      { status: forbidden ? 403 : unauthorized ? 401 : 500 },
+    );
+  }
 }
 
 export async function POST(req: Request) {
   try {
-    await requireAdmin(); await connectDB(); const input = productInput(await req.json())
-    const product = await Product.create(input)
-    return NextResponse.json({ product: { ...product.toObject(), id: String(product._id) } }, { status: 201 })
+    assertSameOrigin(req);
+    await requireAdmin();
+    await connectDB();
+    const input = productInput(await req.json());
+    const product = await Product.create(input);
+    return NextResponse.json(
+      {
+        product: {
+          ...product.toObject(),
+          id: String(product._id),
+          _id: undefined,
+        },
+      },
+      { status: 201 },
+    );
   } catch (e) {
-    if (e && typeof e === 'object' && 'code' in e && e.code === 11000) return NextResponse.json({ error: 'A product with that slug or SKU already exists.' }, { status: 409 })
-    const forbidden = e instanceof Error && e.message === 'FORBIDDEN'; const unauthorized = e instanceof Error && e.message === 'UNAUTHORIZED'
-    return NextResponse.json({ error: forbidden ? 'Forbidden' : unauthorized ? 'Unauthorized' : e instanceof Error ? e.message : 'Unable to create product.' }, { status: forbidden ? 403 : unauthorized ? 401 : 400 })
+    const safe = securityError(e);
+    if (safe) return safe;
+    if (e && typeof e === "object" && "code" in e && e.code === 11000)
+      return NextResponse.json(
+        { error: "A product with that slug or SKU already exists." },
+        { status: 409 },
+      );
+    const forbidden = e instanceof Error && e.message === "FORBIDDEN";
+    const unauthorized = e instanceof Error && e.message === "UNAUTHORIZED";
+    return NextResponse.json(
+      {
+        error: forbidden
+          ? "Forbidden"
+          : unauthorized
+            ? "Unauthorized"
+            : e instanceof Error
+              ? e.message
+              : "Unable to create product.",
+      },
+      { status: forbidden ? 403 : unauthorized ? 401 : 400 },
+    );
   }
 }

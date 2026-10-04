@@ -1,2 +1,4 @@
-import Contact from '../../../storefront/Contact'
-export default function Page(){ return <Contact/> }
+import Contact from "../../../storefront/Contact";
+export default function Page() {
+  return <Contact />;
+}

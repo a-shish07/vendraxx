@@ -27,6 +27,7 @@ interface AppContextType {
   currentPage: Page
   navigate: (page: Page | string, ...args: unknown[]) => void
   cart: CartItem[]
+  cartLoaded: boolean
   addToCart: (product: Omit<CartItem, 'quantity'>) => void
   removeFromCart: (id: string | number) => void
   updateQuantity: (id: string | number, qty: number) => void
@@ -156,7 +157,7 @@ export default function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      currentPage: pathToPage(pathname), navigate, cart, addToCart: handleAddToCart, removeFromCart, updateQuantity,
+      currentPage: pathToPage(pathname), navigate, cart,cartLoaded, addToCart: handleAddToCart, removeFromCart, updateQuantity,
       clearCart, cartTotal, cartCount, wishlist, toggleWishlist, user, authLoading, refreshUser,
       toasts, toast, dismissToast,
     }}>

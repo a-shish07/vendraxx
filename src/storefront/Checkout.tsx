@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react'
 import { useApp } from '../App'
 
 export default function Checkout() {
-  const { cart, cartTotal, clearCart, navigate, user } = useApp()
+ const {
+  cart,
+  cartLoaded,
+  cartTotal,
+  clearCart,
+  navigate,
+  user,
+} = useApp()
 
   const [form, setForm] = useState({
     name: '',
@@ -98,6 +105,19 @@ export default function Checkout() {
   /* -------------------------------------------------------------------------- */
   /* EMPTY STATE                                                                */
   /* -------------------------------------------------------------------------- */
+
+  if (!cartLoaded) {
+  return (
+    <main className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900" />
+        <p className="text-sm text-neutral-500">
+          Restoring your cart...
+        </p>
+      </div>
+    </main>
+  )
+}
 
   if (cart.length === 0) {
     return (

@@ -396,7 +396,7 @@ export default function About() {
       {/* =========================================================
           TEAM
       ========================================================= */}
-      <section className="py-12 sm:py-14">
+      {/* <section className="py-12 sm:py-14">
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
@@ -437,13 +437,13 @@ export default function About() {
 
         </div>
 
-      </section>
+      </section> */}
 
 
       {/* =========================================================
           CTA
       ========================================================= */}
-      <section className="pb-10 sm:pb-14">
+      <section className="pb-10 sm:pb-14 mt-14">
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useApp } from "../../../App";
 
 type Category = {
@@ -67,24 +67,68 @@ export default function AdminCategories() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryName, setCategoryName] = useState("");
+  const [subcategoryName, setSubcategoryName] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/categories", { cache: "no-store" })
-      .then(async (r) => {
-        const d = await r.json();
+  async function loadCategories() {
+    try {
+      const r = await fetch("/api/categories", { cache: "no-store" });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setCategories(d.categories || []);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Unable to load categories.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-        if (!r.ok) throw new Error(d.error);
+  useEffect(() => { void loadCategories(); }, []);
 
-        setCategories(d.categories || []);
-      })
-      .catch((e) =>
-        toast(
-          e instanceof Error ? e.message : "Unable to load categories.",
-          "error",
-        ),
-      )
-      .finally(() => setLoading(false));
-  }, [toast]);
+  async function saveCategory(event: FormEvent) {
+    event.preventDefault();
+    const name = categoryName.trim();
+    if (!name) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Unable to add category.");
+      setCategoryName("");
+      setSelectedCategory(name);
+      await loadCategories();
+      toast("Category added.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Unable to add category.", "error");
+    } finally { setSaving(false); }
+  }
+
+  async function saveSubcategory(event: FormEvent) {
+    event.preventDefault();
+    const subcategory = subcategoryName.trim();
+    if (!selectedCategory || !subcategory) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: selectedCategory, subcategory }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Unable to add subcategory.");
+      setSubcategoryName("");
+      await loadCategories();
+      toast("Subcategory added.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Unable to add subcategory.", "error");
+    } finally { setSaving(false); }
+  }
 
   const totalProducts = categories.reduce(
     (sum, category) => sum + category.count,
@@ -133,6 +177,26 @@ export default function AdminCategories() {
           </div>
         )}
       </div>
+
+      <section className="mt-7 grid gap-4 rounded-3xl border border-[#e5e1da] bg-white p-5 shadow-sm lg:grid-cols-2">
+        <form onSubmit={(event) => void saveCategory(event)} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="min-w-0 flex-1 text-xs font-bold uppercase tracking-[0.1em] text-[#77716a]">
+            Add category
+            <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} maxLength={100} required placeholder="e.g. Electronics" className="mt-2 h-11 w-full rounded-xl border border-[#dfe3e8] px-3 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#5146e5]" />
+          </label>
+          <button disabled={saving} className="h-11 rounded-xl bg-[#5146e5] px-4 text-sm font-bold text-white disabled:opacity-50">Add category</button>
+        </form>
+        <form onSubmit={(event) => void saveSubcategory(event)} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="min-w-0 flex-1 text-xs font-bold uppercase tracking-[0.1em] text-[#77716a]">
+            Add subcategory
+            <div className="mt-2 flex gap-2">
+              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} required className="h-11 min-w-0 flex-1 rounded-xl border border-[#dfe3e8] px-3 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#5146e5]"><option value="">Category</option>{categories.map((category) => <option key={category.name} value={category.name}>{category.name}</option>)}</select>
+              <input value={subcategoryName} onChange={(event) => setSubcategoryName(event.target.value)} maxLength={100} required placeholder="e.g. Headphones" className="h-11 min-w-0 flex-1 rounded-xl border border-[#dfe3e8] px-3 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#5146e5]" />
+            </div>
+          </label>
+          <button disabled={saving || !selectedCategory} className="h-11 rounded-xl bg-[#5146e5] px-4 text-sm font-bold text-white disabled:opacity-50">Add subcategory</button>
+        </form>
+      </section>
 
       {/* Overview */}
       {!loading && categories.length > 0 && (

@@ -361,7 +361,7 @@ export default function About() {
       {/* =========================================================
           VERTICAL JOURNEY
       ========================================================= */}
-      <section className="bg-brand py-12 sm:py-14">
+      {/* <section className="bg-brand py-12 sm:py-14">
 
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 
@@ -390,7 +390,7 @@ export default function About() {
 
         </div>
 
-      </section>
+      </section> */}
 
 
       {/* =========================================================

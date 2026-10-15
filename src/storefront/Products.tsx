@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ProductCard from '../components/ProductCard'
 import { useProducts } from '../hooks/useProducts'
 
-type Filter = 'all' | string
+type Filter = string
+
+type Category = {
+  name: string
+  count: number
+  subcategories: string[]
+}
 
 type Sort =
   | 'featured'
@@ -12,78 +18,15 @@ type Sort =
   | 'price-desc'
   | 'name'
 
-const filterTabs = [
-  {
-    key: 'all',
-    label: 'All Products',
-    shortLabel: 'All',
-  },
-  {
-    key: 'Mobile Accessories',
-    label: 'Mobile Accessories',
-    shortLabel: 'Mobile',
-  },
-  {
-    key: 'Computer Accessories',
-    label: 'Computer Accessories',
-    shortLabel: 'Computer',
-  },
-  {
-    key: 'Audio',
-    label: 'Audio',
-    shortLabel: 'Audio',
-  },
-  {
-    key: 'Kitchen',
-    label: 'Kitchen',
-    shortLabel: 'Kitchen',
-  },
-  {
-    key: 'Kitchen Appliances',
-    label: 'Kitchen Appliances',
-    shortLabel: 'Appliances',
-  },
-  {
-    key: 'Home',
-    label: 'Home',
-    shortLabel: 'Home',
-  },
-  {
-    key: 'Wearables',
-    label: 'Wearables',
-    shortLabel: 'Wearables',
-  },
-  {
-    key: 'Gaming',
-    label: 'Gaming',
-    shortLabel: 'Gaming',
-  },
-  {
-    key: 'Smartphones',
-    label: 'Smartphones',
-    shortLabel: 'Phones',
-  },
-  {
-    key: 'Computers',
-    label: 'Computers',
-    shortLabel: 'Computers',
-  },
-  {
-    key: 'Home Entertainment',
-    label: 'Home Entertainment',
-    shortLabel: 'Entertainment',
-  },
-  {
-    key: 'Home Appliances',
-    label: 'Home Appliances',
-    shortLabel: 'Appliances',
-  },
-  {
-    key:'Clothing',
-    label:'Clothing',
-    shortLabel:'Clothing',
-  }
-]
+const subcategoryKey = (category: string, subcategory: string) =>
+  `${category}\u0000${subcategory}`
+
+const splitFilter = (filter: Filter) => {
+  const separator = filter.indexOf('\u0000')
+  return separator === -1
+    ? { category: filter, subcategory: '' }
+    : { category: filter.slice(0, separator), subcategory: filter.slice(separator + 1) }
+}
 
 const sortOptions: {
   key: Sort
@@ -249,6 +192,7 @@ const ArrowRightIcon = ({
 
 export default function Products() {
 const { products, loading } = useProducts()
+const [categories, setCategories] = useState<Category[]>([])
 const [filter, setFilter] = useState<Filter>('all')
 const [search, setSearch] = useState('')
 const [sort, setSort] = useState<Sort>('featured')
@@ -261,7 +205,8 @@ useEffect(() => {
   const savedCategory = sessionStorage.getItem('vendrax-product-category')
   const params = new URLSearchParams(window.location.search)
   const category = params.get('category')
-  if (category) setFilter(category)
+  const subcategory = params.get('subcategory')
+  if (category) setFilter(subcategory ? subcategoryKey(category, subcategory) : category)
   else if (savedCategory) { setFilter(savedCategory); sessionStorage.removeItem('vendrax-product-category') }
   setSearch(params.get('search') || '')
   if (params.get('sort') === 'price-asc' || params.get('sort') === 'price-desc' || params.get('sort') === 'name') setSort(params.get('sort') as Sort)
@@ -270,9 +215,20 @@ useEffect(() => {
 }, [])
 
 useEffect(() => {
+  fetch('/api/categories', { cache: 'no-store' })
+    .then((response) => response.ok ? response.json() : Promise.reject())
+    .then((data) => setCategories(data.categories || []))
+    .catch(() => setCategories([]))
+}, [])
+
+useEffect(() => {
   if (!initialized.current) return
   const params = new URLSearchParams()
-  if (filter !== 'all') params.set('category', filter)
+  if (filter !== 'all') {
+    const selected = splitFilter(filter)
+    params.set('category', selected.category)
+    if (selected.subcategory) params.set('subcategory', selected.subcategory)
+  }
   if (search.trim()) params.set('search', search.trim())
   if (sort !== 'featured') params.set('sort', sort)
   if (currentPage > 1) params.set('page', String(currentPage))
@@ -294,10 +250,26 @@ useEffect(() => { if (skipInitialPageReset.current) { skipInitialPageReset.curre
     products.forEach((product) => {
       result[product.category] =
         (result[product.category] || 0) + 1
+      if (product.subcategory) {
+        const key = subcategoryKey(product.category, product.subcategory)
+        result[key] = (result[key] || 0) + 1
+      }
     })
 
     return result
   }, [products])
+
+  const filterTabs = useMemo(() => [
+    { key: 'all', label: 'All Products', shortLabel: 'All' },
+    ...categories.flatMap((category) => [
+      { key: category.name, label: category.name, shortLabel: category.name },
+      ...category.subcategories.map((subcategory) => ({
+        key: subcategoryKey(category.name, subcategory),
+        label: `${category.name}: ${subcategory}`,
+        shortLabel: subcategory,
+      })),
+    ]),
+  ], [categories])
 
   /* ------------------------------------------------------------------------ */
   /* Search + Category + Sorting                                              */
@@ -307,9 +279,11 @@ useEffect(() => { if (skipInitialPageReset.current) { skipInitialPageReset.curre
     const q = search.trim().toLowerCase()
 
     const list = products.filter((product) => {
-      const matchCategory =
-        filter === 'all' ||
-        product.category === filter
+      const selected = splitFilter(filter)
+      const matchCategory = filter === 'all' || (
+        product.category === selected.category &&
+        (!selected.subcategory || product.subcategory === selected.subcategory)
+      )
 
       const matchSearch =
         !q ||

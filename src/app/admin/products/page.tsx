@@ -57,6 +57,11 @@ type Summary = {
   outOfStock?: number;
 };
 
+type Category = {
+  name: string;
+  subcategories: string[];
+};
+
 const blank: Editor = {
   name: "",
   price: "",
@@ -329,7 +334,11 @@ export default function AdminProducts() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
 
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [newSubcategory, setNewSubcategory] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [addingSubcategory, setAddingSubcategory] = useState(false);
 
   /* ------------------------------- Editor -------------------------------- */
 
@@ -400,18 +409,68 @@ export default function AdminProducts() {
   /* LOAD CATEGORIES                                                          */
   /* ------------------------------------------------------------------------ */
 
+  async function refreshCategories() {
+    try {
+      const response = await fetch("/api/categories", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to load categories.");
+      setCategories(data.categories || []);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Unable to load categories.", "error");
+    }
+  }
+
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => {
-        setCategories(
-          d.categories?.map(
-            (c: { name: string }) => c.name,
-          ) || [],
-        );
-      })
-      .catch(() => undefined);
+    void refreshCategories();
   }, []);
+
+  async function addCategory() {
+    const name = newCategory.trim();
+    if (!name) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to add category.");
+      await refreshCategories();
+      setForm((current) => ({ ...current, category: name, subcategory: "" }));
+      setNewCategory("");
+      setAddingCategory(false);
+      toast("Category added.");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Unable to add category.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addSubcategory() {
+    const name = newSubcategory.trim();
+    if (!form.category || !name) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.category, subcategory: name }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to add subcategory.");
+      await refreshCategories();
+      setForm((current) => ({ ...current, subcategory: name }));
+      setNewSubcategory("");
+      setAddingSubcategory(false);
+      toast("Subcategory added.");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Unable to add subcategory.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   /* ------------------------------------------------------------------------ */
   /* FILTER WATCH                                                             */
@@ -899,6 +958,7 @@ export default function AdminProducts() {
                             ...form,
                             category:
                               e.target.value,
+                            subcategory: "",
                           })
                         }
                         className={selectClass}
@@ -909,28 +969,45 @@ export default function AdminProducts() {
 
                         {categories.map((c) => (
                           <option
-                            key={c}
-                            value={c}
+                            key={c.name}
+                            value={c.name}
                           >
-                            {c}
+                            {c.name}
                           </option>
                         ))}
                       </select>
+                      <button type="button" onClick={() => setAddingCategory((value) => !value)} className="mt-2 text-xs font-semibold text-[#5146e5] hover:text-[#4338ca]">
+                        + Add category
+                      </button>
+                      {addingCategory && (
+                        <div className="mt-2 flex gap-2">
+                          <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} maxLength={100} placeholder="New category name" className={inputClass} />
+                          <button type="button" disabled={busy || !newCategory.trim()} onClick={() => void addCategory()} className="rounded-xl bg-[#5146e5] px-4 text-sm font-bold text-white disabled:opacity-50">Add</button>
+                        </div>
+                      )}
                     </Field>
 
                     <Field label="Subcategory">
-                      <input
-                        placeholder="e.g. Bridal"
+                      <select
                         value={form.subcategory}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            subcategory:
-                              e.target.value,
-                          })
-                        }
-                        className={inputClass}
-                      />
+                        disabled={!form.category}
+                        onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                        className={selectClass}
+                      >
+                        <option value="">No subcategory</option>
+                        {(categories.find((category) => category.name === form.category)?.subcategories || []).map((subcategory) => (
+                          <option key={subcategory} value={subcategory}>{subcategory}</option>
+                        ))}
+                      </select>
+                      <button type="button" disabled={!form.category} onClick={() => setAddingSubcategory((value) => !value)} className="mt-2 text-xs font-semibold text-[#5146e5] hover:text-[#4338ca] disabled:cursor-not-allowed disabled:text-[#9ba3b0]">
+                        + Add subcategory
+                      </button>
+                      {addingSubcategory && (
+                        <div className="mt-2 flex gap-2">
+                          <input value={newSubcategory} onChange={(e) => setNewSubcategory(e.target.value)} maxLength={100} placeholder="New subcategory name" className={inputClass} />
+                          <button type="button" disabled={busy || !newSubcategory.trim()} onClick={() => void addSubcategory()} className="rounded-xl bg-[#5146e5] px-4 text-sm font-bold text-white disabled:opacity-50">Add</button>
+                        </div>
+                      )}
                     </Field>
 
                     <Field label="SKU">
@@ -1665,10 +1742,10 @@ export default function AdminProducts() {
 
               {categories.map((c) => (
                 <option
-                  key={c}
-                  value={c}
+                  key={c.name}
+                  value={c.name}
                 >
-                  {c}
+                  {c.name}
                 </option>
               ))}
             </select>

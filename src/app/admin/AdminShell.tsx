@@ -12,6 +12,7 @@ const links = [
   ["/admin/customers", "Customers"],
   ["/admin/categories", "Categories"],
   ["/admin/analytics", "Analytics"],
+  ["/admin/settings", "Settings"],
 ] as const;
 
 function initials(name = "") {

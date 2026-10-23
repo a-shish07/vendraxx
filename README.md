@@ -61,6 +61,10 @@ npm run seed:products
 
 Then open `/admin` after logging in with the seeded admin account.
 
+To change an existing administrator's login email or password, sign in and use
+**Admin panel → Settings**. The current password is required; changing it signs
+out other sessions.
+
 ## Main routes
 
 - `/` storefront home

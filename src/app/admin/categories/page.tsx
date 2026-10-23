@@ -71,6 +71,7 @@ export default function AdminCategories() {
   const [subcategoryName, setSubcategoryName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState("");
 
   async function loadCategories() {
     try {
@@ -130,6 +131,27 @@ export default function AdminCategories() {
     } finally { setSaving(false); }
   }
 
+  async function deleteItem(name: string, subcategory = "") {
+    const label = subcategory ? `subcategory “${subcategory}”` : `category “${name}”`;
+    if (!window.confirm(`Delete ${label}? This is only possible when no products use it.`)) return;
+    const key = `${name}\u0000${subcategory}`;
+    setDeleting(key);
+    try {
+      const r = await fetch("/api/categories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, ...(subcategory ? { subcategory } : {}) }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Unable to delete category.");
+      if (selectedCategory === name && !subcategory) setSelectedCategory("");
+      await loadCategories();
+      toast(subcategory ? "Subcategory deleted." : "Category deleted.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Unable to delete category.", "error");
+    } finally { setDeleting(""); }
+  }
+
   const totalProducts = categories.reduce(
     (sum, category) => sum + category.count,
     0,
@@ -154,8 +176,8 @@ export default function AdminCategories() {
           </h1>
 
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#77716a]">
-            Categories and subcategories are derived from active product
-            records.
+            Manage the categories used in your catalogue. Items assigned to a
+            product must be reassigned or removed before deletion.
           </p>
         </div>
 
@@ -306,8 +328,13 @@ export default function AdminCategories() {
                   </div>
                 </div>
 
-                <div className="shrink-0 rounded-full bg-[#f5f1eb] px-3 py-1.5 text-xs font-bold text-[#a17b3f]">
-                  {c.count}
+                <div className="flex shrink-0 items-center gap-2">
+                  <div className="rounded-full bg-[#f5f1eb] px-3 py-1.5 text-xs font-bold text-[#a17b3f]">
+                    {c.count}
+                  </div>
+                  <button type="button" onClick={() => void deleteItem(c.name)} disabled={Boolean(deleting)} aria-label={`Delete ${c.name}`} className="rounded-lg border border-rose-200 px-2 py-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50">
+                    {deleting === `${c.name}\u0000` ? "Deleting…" : "Delete"}
+                  </button>
                 </div>
               </div>
 
@@ -333,6 +360,9 @@ export default function AdminCategories() {
                       >
                         <span className="h-1 w-1 rounded-full bg-[#b28b52]" />
                         {s}
+                        <button type="button" onClick={() => void deleteItem(c.name, s)} disabled={Boolean(deleting)} aria-label={`Delete ${s}`} className="ml-1 rounded text-rose-600 hover:text-rose-800 disabled:opacity-50">
+                          {deleting === `${c.name}\u0000${s}` ? "…" : "×"}
+                        </button>
                       </span>
                     ))}
                   </div>

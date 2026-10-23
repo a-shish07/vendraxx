@@ -122,3 +122,53 @@ export async function PATCH(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    assertSameOrigin(req);
+    await requireAdmin();
+    const body = await req.json();
+    const name = categoryName(body.name, "category name");
+    const subcategory = body.subcategory
+      ? categoryName(body.subcategory, "subcategory name")
+      : "";
+    await connectDB();
+
+    const productFilter = subcategory
+      ? { category: name, subcategory }
+      : { category: name };
+    if (await Product.exists(productFilter)) {
+      return NextResponse.json(
+        {
+          error: subcategory
+            ? "Move or remove products in this subcategory before deleting it."
+            : "Move or remove products in this category before deleting it.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (subcategory) {
+      const category = await Category.findOneAndUpdate(
+        { name, "subcategories.name": subcategory },
+        { $pull: { subcategories: { name: subcategory } } },
+        { new: true },
+      );
+      if (!category)
+        return NextResponse.json({ error: "Subcategory not found." }, { status: 404 });
+      return NextResponse.json({ ok: true });
+    }
+
+    const deleted = await Category.findOneAndDelete({ name });
+    if (!deleted)
+      return NextResponse.json({ error: "Category not found." }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const safe = securityError(error);
+    if (safe) return safe;
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to delete category." },
+      { status: 400 },
+    );
+  }
+}

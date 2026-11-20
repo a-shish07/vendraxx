@@ -8,7 +8,7 @@ import type { FormEvent, ReactNode } from 'react'
 /* -------------------------------------------------------------------------- */
 
 const EMAIL = 'vendraxpvt@gmail.com'
-const LOCATION_LABEL = 'India' // TODO: add city / full address when the client shares it
+const LOCATION_LABEL = 'Shop NO. N2-905, Rohtak, Haryana ' // TODO: add city / full address when the client shares it
 
 const TOPICS = ['Order help', 'Product question', 'Returns & refunds', 'Something else']
 

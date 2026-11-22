@@ -139,7 +139,7 @@ export default function Footer() {
             {/* Social */}
             <div className="mt-5 flex items-center gap-2.5">
               {/* Facebook */}
-              <a
+              {/* <a
                 href="#"
                 aria-label="Facebook"
                 className="
@@ -161,10 +161,10 @@ export default function Footer() {
                 >
                   <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
                 </svg>
-              </a>
+              </a> */}
 
               {/* Instagram */}
-              <a
+              {/* <a
                 href="#"
                 aria-label="Instagram"
                 className="
@@ -192,7 +192,7 @@ export default function Footer() {
 
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                 </svg>
-              </a>
+              </a> */}
 
               {/* WhatsApp */}
              {/* Phone */}
@@ -227,7 +227,7 @@ export default function Footer() {
 </a>
 
               {/* X */}
-              <a
+              {/* <a
                 href="#"
                 aria-label="Twitter / X"
                 className="
@@ -249,7 +249,7 @@ export default function Footer() {
                 >
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
-              </a>
+              </a> */}
             </div>
           </div>
 
@@ -503,35 +503,33 @@ export default function Footer() {
             BOTTOM BAR
         ========================================================== */}
         <div className="border-t border-white/10 py-5">
-          <div className="flex flex-col gap-3 text-[10px] text-white/35 sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              © {new Date().getFullYear()} Vendrax Pvt. All rights reserved.
-            </p>
+  <div className="flex flex-col gap-3 text-[10px] text-white/35 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-2 ">
+      <p>
+        © {new Date().getFullYear()} Vendrax Pvt. All rights reserved.
+      </p>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Link
-                href="/terms"
-                className="transition-colors hover:text-white"
-              >
-                Terms & Conditions
-              </Link>
+      <a
+        href="https://www.quinova.tech"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="transition-colors text-[12px]"
+      >
+        Developed by <span className="font-bold text-white/60 hover:text-white text-[12px]"> Quinova IT Solutions</span>
+      </a>
+    </div>
 
-              <Link
-                href="/refund-policy"
-                className="transition-colors hover:text-white"
-              >
-                Refund Policy
-              </Link>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <Link href="/terms" className="transition-colors hover:text-white">
+        Terms & Conditions
+      </Link>
 
-              <Link
-                href="/contact"
-                className="transition-colors hover:text-white"
-              >
-                Support
-              </Link>
-            </div>
-          </div>
-        </div>
+      <Link href="/refund-policy" className="transition-colors hover:text-white">
+        Refund Policy
+      </Link>
+    </div>
+  </div>
+</div>
       </div>
     </footer>
   );
